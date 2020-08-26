@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('templates.default');
+    return redirect()->route('bank.index');
 });
 
 Route::get('bank', 'BankController@index')->name('bank.index');
