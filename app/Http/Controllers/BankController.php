@@ -11,15 +11,16 @@ class BankController extends Controller
 {
     public function rules($id)
     {
-        $id ? ',contact_email,'.$id : '';
+        $id = $id ? ',contact_email,'.$id : '';
+        $required = empty($id) ? 'required' : '';
         return [
             'bank_name' => 'required|min:3',
-            'logo' => 'file|image|mimes:jpeg,bmp,png|max:2048|required',
+            'logo' => 'file|image|mimes:jpeg,jpg,png|max:2048|'.$required,
             'contact_email' => 'required|email|unique:banks'.$id
         ];
     }
 
-    public function messages()
+    private function messages()
     {
         return [
             'required' => ':attribute tidak boleh kosong',
@@ -28,16 +29,26 @@ class BankController extends Controller
             'email' => ':attribute harus bertipe email',
             'unique' => ':attribute sudah di tambahkan',
             'image' => ':attribute harus bertipe gambar',
-            'mimes' => ':attribute harus berekstensi :mimes'
+            'mimes' => ':attribute harus berekstensi :values'
         ];
     }
 
-    public function translates()
+    private function translates()
     {
         return [
             'bank_name' => 'nama bank',
-            'contact_email' => 'email'
+            'contact_email' => 'email',
+            'logo' => 'logo'
         ];
+    }
+
+    private function uploadToAws($logo)
+    {
+        $filename = date('Y-m-d h:i:s') . '.' . $logo->getClientOriginalExtension();
+        $filepath = 'test/' . $filename;
+        Storage::disk('s3')->put($filepath, file_get_contents($logo));
+
+        return Storage::disk('s3')->url($filepath, $filename);
     }
 
     public function index()
@@ -56,13 +67,11 @@ class BankController extends Controller
         $this->validate($request, $this->rules(null), $this->messages(), $this->translates());
 
         $logo = $request->file('logo');
-        $filename = date('Y-m-d h:i:s') . '.' . $logo->getClientOriginalExtension();
-        $filepath = 'test/' . $filename;
-        Storage::disk('s3')->put($filepath, file_get_contents($logo));
+        $logoAws = $this->uploadToAws($logo);
 
         $bank = new Bank();
         $bank->bank_name = $request->bank_name;
-        $bank->logo = Storage::disk('s3')->url($filepath, $filename);
+        $bank->logo = $logoAws;
         $bank->contact_email = $request->contact_email;
         $bank->save();
 
@@ -81,15 +90,12 @@ class BankController extends Controller
     {
         $this->validate($request, $this->rules($id), $this->messages(), $this->translates());
 
-        $bank = Bank::findOrFail($id);
         $logo = $request->file('logo');
-        $filename = date('Y-m-d h:i:s') . '.' . $logo->getClientOriginalExtension();
-        $filepath = 'test/' . $filename;
-        Storage::disk('s3')->put($filepath, file_get_contents($logo));
+        $logo ? $logoAws = $this->uploadToAws($logo) : '';
 
-        
+        $bank = Bank::findOrFail($id);
         $bank->bank_name = $request->bank_name;
-        $bank->logo = Storage::disk('s3')->url($filepath, $filename);
+        $logo ? $bank->logo = $logoAws : '';
         $bank->contact_email = $request->contact_email;
         $bank->update();
 

@@ -9,9 +9,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <form
-                            action="{{ route('bank.store') }}"
-                            method="post"
+                        <form action="{{ route('bank.store') }}" method="post"
                             enctype="multipart/form-data">
                             @csrf
                             <div class="form-group">
@@ -26,7 +24,7 @@
 
                             <div class="form-group">
                                 <label>Logo</label>
-                                <input type="file" class="@error('logo') is-invalid @enderror dropify" 
+                                <input type="file" class="dropify @error('logo') is-invalid @enderror" 
                                 name="logo" data-default-file="{{ old('logo') }}"/>
                                 @error('logo')
                                     <div class="alert alert-danger">{{ $message }}</div>
